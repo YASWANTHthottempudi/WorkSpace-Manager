@@ -28,13 +28,7 @@ A Notion-like collaborative editor with AI summarization, real-time sync, Redis 
 - **Headless UI** - Accessible UI components
 - **Heroicons** - Icons
 
-### Backend
-- **Express.js** - Node.js web framework
-- **MongoDB (Mongoose)** - Database
-- **Socket.IO** - Real-time communication
-- **Redis** - Caching and pub/sub
-- **JWT** - Authentication
-- **bcrypt** - Password hashing
+
 
 ### AI Integration
 - **OpenAI API (GPT-4o)** - AI capabilities
@@ -246,84 +240,7 @@ NODE_ENV=development
 - `POST /api/ai/rewrite` - Rewrite text
 - `POST /api/ai/query` - Answer questions about text
 
----
 
-## 🧪 Testing
 
-### Frontend Tests
-```bash
-cd frontend
-npm test
-```
 
-### Backend Tests
-```bash
-cd backend
-npm test
-```
-
----
-
-## 🚢 Deployment
-
-### Frontend (Vercel)
-1. Push to GitHub
-2. Connect repository to Vercel
-3. Configure environment variables
-4. Deploy
-
-### Backend (Render/AWS)
-1. Create new web service
-2. Connect GitHub repository
-3. Set environment variables
-4. Deploy
-
----
-
-## 🧠 Key Learning Outcomes
-
-| Domain | Skills |
-|--------|--------|
-| **Frontend** | Next.js App Router, SSR, dynamic routing, global state |
-| **Backend** | REST design, middleware, JWT, Mongoose |
-| **Realtime** | Socket.IO, Redis pub/sub |
-| **AI** | GPT API integration, caching results, prompt chaining |
-| **Cloud** | S3 storage, environment configuration |
-| **DevOps** | GitHub Actions pipeline, secret management, Vercel/Render deploy |
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License.
-
----
-
-## 👤 Author
-
-**Yaswanth Thottempudi**
-
----
-
-## 🙏 Acknowledgments
-
-- Inspired by Notion
-- Built with modern web technologies
-- AI-powered features using OpenAI
-
----
-
-## 📞 Support
-
-For support, email your-email@example.com or open an issue in the repository.
 
