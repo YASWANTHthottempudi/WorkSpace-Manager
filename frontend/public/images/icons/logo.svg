@@ -1,0 +1,19 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon part -->
+  <g transform="translate(5, 5)">
+    <!-- Geometric shape representing AI/workspace -->
+    <rect x="0" y="0" width="30" height="30" rx="6" fill="#3B82F6"/>
+    
+    <!-- Inner sparkle/AI element -->
+    <path d="M15,8 L17,13 L22,15 L17,17 L15,22 L13,17 L8,15 L13,13 Z" fill="white"/>
+    
+    <!-- Small accent -->
+    <circle cx="23" cy="8" r="2" fill="#60A5FA"/>
+  </g>
+  
+  <!-- Text part -->
+  <text x="45" y="25" fill="#1F2937" font-family="Arial, sans-serif" font-size="16" font-weight="700">
+    AI Workspace
+  </text>
+</svg>
+

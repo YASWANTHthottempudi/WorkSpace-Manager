@@ -1,0 +1,34 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#F9FAFB"/>
+  
+  <!-- Document stack illustration -->
+  <g transform="translate(120, 60)">
+    <!-- Back documents (lighter) -->
+    <rect x="20" y="10" width="140" height="180" rx="4" fill="#E5E7EB" stroke="#D1D5DB" stroke-width="2"/>
+    <rect x="10" y="5" width="140" height="180" rx="4" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="2"/>
+    
+    <!-- Front document -->
+    <rect x="0" y="0" width="140" height="180" rx="4" fill="white" stroke="#9CA3AF" stroke-width="2"/>
+    
+    <!-- Lines on document -->
+    <line x1="20" y1="30" x2="120" y2="30" stroke="#D1D5DB" stroke-width="3" stroke-linecap="round"/>
+    <line x1="20" y1="50" x2="120" y2="50" stroke="#D1D5DB" stroke-width="3" stroke-linecap="round"/>
+    <line x1="20" y1="70" x2="100" y2="70" stroke="#D1D5DB" stroke-width="3" stroke-linecap="round"/>
+    <line x1="20" y1="90" x2="110" y2="90" stroke="#D1D5DB" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Plus icon -->
+    <circle cx="70" cy="130" r="20" fill="#3B82F6" opacity="0.2"/>
+    <line x1="70" y1="120" x2="70" y2="140" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+    <line x1="60" y1="130" x2="80" y2="130" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="200" y="220" text-anchor="middle" fill="#6B7280" font-family="Arial, sans-serif" font-size="18" font-weight="600">
+    No Pages Yet
+  </text>
+  <text x="200" y="245" text-anchor="middle" fill="#9CA3AF" font-family="Arial, sans-serif" font-size="14">
+    Start creating pages in this workspace
+  </text>
+</svg>
+
