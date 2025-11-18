@@ -20,7 +20,7 @@ A Notion-like collaborative editor with AI summarization, real-time sync, Redis 
 - **Next.js 14** - React framework with App Router (JavaScript)
 - **React** - UI library
 - **TailwindCSS** - Styling
-- **Zustand/Context** - State management
+- **Redux Toolkit** - State management
 - **Socket.IO Client** - Real-time communication
 - **Axios** - HTTP client
 - **React Markdown** - Markdown rendering
@@ -89,6 +89,75 @@ AI_Workspace/
 
 
 
+<<<<<<< HEAD
+=======
+| Day | Focus | Deliverables |
+|-----|-------|-------------|
+| 1 | Project setup | Init frontend with Next.js, Tailwind, ESLint. Add folder structure `/app`, `/components`, `/context`. Basic layout (Sidebar + Topbar). |
+| 2 | Auth UI | Login/Signup pages, reusable `<Input>` + `<Button>`. Local state only. Add Context for auth. |
+| 3 | Dashboard UI | "My Workspaces" list. Add modal for creating a workspace. Store mock data in localStorage. |
+| 4 | Page editor UI | Create markdown/text editor using react-markdown or block editor (simple). Add "Ask AI" and "Summarize" buttons (no backend yet). |
+| 5 | Page list sidebar | Nested structure like Notion (workspace → pages). Manage via Redux Toolkit. |
+| 6 | UI polish | Responsive layout, Tailwind themes, animations (Framer Motion). |
+| 7 | Test & docs | Component testing with Testing Library. Commit: `feat(ui): base dashboard + editor`. |
+
+**Result**: Full mock frontend with navigation and editor ready to connect backend.
+
+---
+
+### **WEEK 2 – Backend API (Express + MongoDB)**
+**Goal**: Implement auth, workspaces, and pages CRUD.
+
+| Day | Focus | Deliverables |
+|-----|-------|-------------|
+| 8 | Init backend | Express + dotenv + cors + mongoose setup. `/api/health` route. Connect to MongoDB Atlas. |
+| 9 | Auth system | User model `{name,email,passwordHash}`. Routes: `/auth/register`, `/auth/login`. bcrypt + JWT. |
+| 10 | Workspace model | `{title, owner, members}` CRUD routes `/api/workspaces`. Auth middleware. |
+| 11 | Page model | `{title, content, workspaceId, updatedBy}` CRUD routes `/api/pages`. |
+| 12 | Connect frontend | Replace mock calls with Axios. Show real workspace/page data. |
+| 13 | Error handling | Global error middleware + request validation. |
+| 14 | API testing | Postman + Jest tests. Commit: `feat(api): users, workspaces, pages CRUD`. |
+
+**Result**: Fully functional REST API, secure JWT auth, and Mongo integration.
+
+---
+
+### **WEEK 3 – Realtime Sync + Redis + AI Integration**
+**Goal**: Add live collaboration and AI summarization features.
+
+| Day | Focus | Deliverables |
+|-----|-------|-------------|
+| 15 | Redis setup | Install Redis locally or Upstash. Add caching layer for `/pages/:id` fetch. |
+| 16 | Socket.IO integration | Server: `io.on('join_page')`, emit `page_update`. Client: update content in real time. |
+| 17 | Redis pub/sub | Publish updates to `page_update` channel. Subscribed servers sync across instances. |
+| 18 | AI summarization | Add `/api/ai/summarize` route. Input: text → output: summary via GPT API. |
+| 19 | AI rewrite / query | Add `/api/ai/rewrite` and `/api/ai/query`. Integrate buttons in editor. |
+| 20 | Performance pass | Cache AI responses (TTL 5 min) in Redis. Add rate limiter. |
+| 21 | Manual test | Multi-tab editing test. AI outputs functional. Commit: `feat(realtime+ai): sockets + summarizer`. |
+
+**Result**: Real-time collaborative editing, Redis caching, and AI summarization integrated.
+
+---
+
+### **WEEK 4 – CI/CD + Cloud Integration + Final Polish**
+**Goal**: Automate build/test/deploy; finish docs and metrics.
+
+| Day | Focus | Deliverables |
+|-----|-------|-------------|
+| 22 | AWS + S3 setup | Store attachments (optional). Configure aws-sdk + presigned URLs. |
+| 23 | GitHub Actions | `.github/workflows/ci.yml` — lint, test, build on push. |
+| 24 | Deployment | Frontend → Vercel, Backend → Render/AWS ECS. Configure env vars + secrets. |
+| 25 | Logging + monitoring | Add Winston logger + health check dashboard. |
+| 26 | Optimization | Mongo indexes, Redis TTL tuning, compression. |
+| 27 | Documentation | Full README.md: architecture diagram, setup, routes, API examples. |
+| 28 | Final QA | Cross-device test, performance audit, commit `release(v1.0): production build`. |
+
+**Result**: Production-ready system with CI/CD, cloud integrations, and docs.
+
+---
+
+## 🚀 Getting Started
+>>>>>>> 1804390 (backend setup)
 
 ### Prerequisites
 - Node.js 18+ and npm/yarn
