@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
-  addWorkspace,
-  deleteWorkspace,
-  updateWorkspace,
-  initializeMockData,
+  fetchWorkspaces,
+  createWorkspace,
+  deleteWorkspace as deleteWorkspaceAction,
+  updateWorkspace as updateWorkspaceAction,
 } from '@/store/workspaceSlice';
 import Layout from '@/components/shared/Layout';
 import WorkspaceCard from '@/components/workspace/WorkspaceCard';
@@ -19,12 +19,14 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const dispatch = useAppDispatch();
   const workspaces = useAppSelector((state) => {
     const ws = state.workspaces?.workspaces;
     return Array.isArray(ws) ? ws : [];
   });
+  const workspacesLoading = useAppSelector((state) => state.workspaces?.loading || false);
+  const error = useAppSelector((state) => state.workspaces?.error);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorkspace, setEditingWorkspace] = useState(null);
@@ -67,31 +69,33 @@ export default function DashboardPage() {
       const hasUser = typeof window !== 'undefined' && localStorage.getItem('user');
       
       // Only redirect if we're sure there's no auth data
-      if (!hasToken && !hasUser && !isAuthenticated && !loading) {
+      if (!hasToken && !hasUser && !isAuthenticated && !authLoading) {
         router.push('/auth/login');
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [mounted, authChecked, isAuthenticated, loading, router]);
+  }, [mounted, authChecked, isAuthenticated, authLoading, router]);
   
-  // Initialize mock data if we have workspaces
+  // Fetch workspaces from API
   useEffect(() => {
-    if (mounted && workspaces.length === 0) {
-      dispatch(initializeMockData());
+    if (mounted && isAuthenticated && !authLoading) {
+      dispatch(fetchWorkspaces());
     }
-  }, [mounted, workspaces.length, dispatch]);
+  }, [mounted, isAuthenticated, authLoading, dispatch]);
 
   // Get user from context or local state
   const currentUser = user || localUser;
 
-  const handleCreateWorkspace = (formData) => {
-    dispatch(
-      addWorkspace({
-        ...formData,
-        owner: currentUser?.email || 'current-user',
-      })
-    );
+  const handleCreateWorkspace = async (formData) => {
+    try {
+      await dispatch(createWorkspace({
+        title: formData.title,
+        description: formData.description || '',
+      })).unwrap();
+    } catch (err) {
+      console.error('Failed to create workspace:', err);
+    }
   };
 
   const handleEditWorkspace = (workspace) => {
@@ -99,20 +103,31 @@ export default function DashboardPage() {
     setIsModalOpen(true);
   };
 
-  const handleUpdateWorkspace = (formData) => {
+  const handleUpdateWorkspace = async (formData) => {
     if (editingWorkspace) {
-      dispatch(
-        updateWorkspace({
-          id: editingWorkspace.id,
-          updates: formData,
-        })
-      );
-      setEditingWorkspace(null);
+      try {
+        const id = editingWorkspace._id || editingWorkspace.id;
+        await dispatch(updateWorkspaceAction({
+          id,
+          title: formData.title,
+          description: formData.description || '',
+        })).unwrap();
+        setEditingWorkspace(null);
+      } catch (err) {
+        console.error('Failed to update workspace:', err);
+      }
     }
   };
 
-  const handleDeleteWorkspace = (id) => {
-    dispatch(deleteWorkspace(id));
+  const handleDeleteWorkspace = async (id) => {
+    if (window.confirm('Are you sure you want to delete this workspace?')) {
+      try {
+        const workspaceId = typeof id === 'string' ? id : (id._id || id.id);
+        await dispatch(deleteWorkspaceAction(workspaceId)).unwrap();
+      } catch (err) {
+        console.error('Failed to delete workspace:', err);
+      }
+    }
   };
 
   const handleModalClose = () => {
@@ -169,14 +184,28 @@ export default function DashboardPage() {
           </Button>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {workspacesLoading && workspaces.length === 0 && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-600">Loading workspaces...</div>
+          </div>
+        )}
+
         {/* Workspaces Grid - Responsive */}
-        {workspaces.length === 0 ? (
+        {!workspacesLoading && workspaces.length === 0 ? (
           <EmptyWorkspace onCreateWorkspace={() => setIsModalOpen(true)} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {workspaces.map((workspace) => (
               <WorkspaceCard
-                key={workspace.id}
+                key={workspace._id || workspace.id}
                 workspace={workspace}
                 onDelete={handleDeleteWorkspace}
                 onEdit={handleEditWorkspace}

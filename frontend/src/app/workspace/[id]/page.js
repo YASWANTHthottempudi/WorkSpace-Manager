@@ -5,10 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
+  fetchPages,
+  createPage,
   updatePage,
-  addPage,
   deletePage,
-  initializeWorkspacePages,
 } from '@/store/pageSlice';
 import Sidebar from '@/components/shared/Sidebar';
 import Topbar from '@/components/shared/Topbar';
@@ -27,7 +27,7 @@ export default function WorkspacePage() {
   
   // Get workspace
   const workspaces = useAppSelector((state) => state.workspaces.workspaces || []);
-  const workspace = workspaces.find((ws) => ws.id === workspaceId);
+  const workspace = workspaces.find((ws) => (ws._id || ws.id) === workspaceId);
   
   // Get pages for this workspace
   const pages = useAppSelector((state) => 
@@ -42,100 +42,111 @@ export default function WorkspacePage() {
   const [aiModalType, setAiModalType] = useState(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
 
-  // Initialize on mount
+  // Initialize on mount and fetch pages
   useEffect(() => {
     setMounted(true);
     
-    if (workspaceId) {
-      dispatch(initializeWorkspacePages({ workspaceId }));
+    if (workspaceId && isAuthenticated && !authLoading) {
+      dispatch(fetchPages(workspaceId));
     }
-  }, [workspaceId, dispatch]);
+  }, [workspaceId, isAuthenticated, authLoading, dispatch]);
 
   // Load first page or create new one
   useEffect(() => {
-    if (!mounted || !workspaceId) return;
+    if (!mounted || !workspaceId || !isAuthenticated) return;
     
     if (pages.length > 0 && !currentPageId) {
       // Load first page
       const firstPage = pages[0];
-      setCurrentPageId(firstPage.id);
+      const pageId = firstPage._id || firstPage.id;
+      setCurrentPageId(pageId);
       setPageTitle(firstPage.title);
-      setPageContent(firstPage.content);
+      setPageContent(firstPage.content || '');
     } else if (pages.length === 0) {
       // Create a default page
-      const newPageId = Date.now().toString();
-      const newPage = {
-        id: newPageId,
-        title: 'Welcome Page',
-        content: '# Welcome to Your Workspace\n\nThis is your first page. Start editing to add your content!',
-        workspaceId,
-        parentId: null,
-        updatedBy: user?.email || 'current-user',
+      const createDefaultPage = async () => {
+        try {
+          const result = await dispatch(createPage({
+            workspaceId,
+            title: 'Welcome Page',
+            content: '# Welcome to Your Workspace\n\nThis is your first page. Start editing to add your content!',
+            parentId: null,
+          })).unwrap();
+          
+          const pageId = result._id || result.id;
+          setCurrentPageId(pageId);
+          setPageTitle(result.title);
+          setPageContent(result.content || '');
+        } catch (err) {
+          console.error('Failed to create default page:', err);
+        }
       };
-      dispatch(addPage({ workspaceId, page: newPage }));
-      // Set as current page immediately
-      setCurrentPageId(newPageId);
-      setPageTitle(newPage.title);
-      setPageContent(newPage.content);
+      
+      createDefaultPage();
     }
-  }, [mounted, workspaceId, pages.length, currentPageId, dispatch, user]);
+  }, [mounted, workspaceId, pages.length, currentPageId, isAuthenticated, dispatch]);
 
   // Update current page when pageId changes or pages update
   useEffect(() => {
     if (currentPageId && pages.length > 0) {
-      const page = pages.find((p) => p.id === currentPageId);
+      const page = pages.find((p) => (p._id || p.id) === currentPageId);
       if (page) {
         setPageTitle(page.title);
-        setPageContent(page.content);
+        setPageContent(page.content || '');
       } else {
         // Page not found, select first page
         if (pages.length > 0) {
-          setCurrentPageId(pages[0].id);
+          const firstPage = pages[0];
+          const pageId = firstPage._id || firstPage.id;
+          setCurrentPageId(pageId);
         }
       }
     } else if (pages.length > 0 && !currentPageId) {
       // No current page but pages exist, select first one
-      setCurrentPageId(pages[0].id);
+      const firstPage = pages[0];
+      const pageId = firstPage._id || firstPage.id;
+      setCurrentPageId(pageId);
     }
   }, [currentPageId, pages]);
 
   // Auto-save content after user stops typing
   useEffect(() => {
-    if (!currentPageId || !pageContent) return;
+    if (!currentPageId || !pageContent || !pageTitle) return;
 
     const timer = setTimeout(() => {
       if (currentPageId) {
         dispatch(
           updatePage({
-            workspaceId,
-            pageId: currentPageId,
-            updates: { content: pageContent },
+            id: currentPageId,
+            title: pageTitle,
+            content: pageContent,
           })
-        );
+        ).catch((err) => {
+          console.error('Failed to auto-save page:', err);
+        });
       }
     }, 1000); // Auto-save after 1 second of inactivity
 
     return () => clearTimeout(timer);
-  }, [pageContent, currentPageId, workspaceId, dispatch]);
+  }, [pageContent, pageTitle, currentPageId, dispatch]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentPageId) return;
     
     setIsSaving(true);
-    dispatch(
-      updatePage({
-        workspaceId,
-        pageId: currentPageId,
-        updates: {
+    try {
+      await dispatch(
+        updatePage({
+          id: currentPageId,
           title: pageTitle,
           content: pageContent,
-        },
-      })
-    );
-    
-    setTimeout(() => {
+        })
+      ).unwrap();
+    } catch (err) {
+      console.error('Failed to save page:', err);
+    } finally {
       setIsSaving(false);
-    }, 500);
+    }
   };
 
   const handleSummarize = () => {
@@ -150,66 +161,87 @@ export default function WorkspacePage() {
 
   const handleTitleChange = (e) => {
     setPageTitle(e.target.value);
-    if (currentPageId) {
-      dispatch(
-        updatePage({
-          workspaceId,
-          pageId: currentPageId,
-          updates: { title: e.target.value },
-        })
-      );
-    }
+    // Title will be saved via auto-save or manual save
   };
 
   // Handle page click from sidebar
   const handlePageClick = (pageId) => {
-    setCurrentPageId(pageId);
+    // Ensure we use the correct ID format (_id or id)
+    const page = pages.find((p) => (p._id || p.id) === pageId);
+    if (page) {
+      const actualId = page._id || page.id;
+      setCurrentPageId(actualId);
+    }
   };
 
   // Handle create new page
-  const handleCreatePage = () => {
-    const newPageId = Date.now().toString();
-    const newPage = {
-      id: newPageId,
-      title: 'Untitled Page',
-      content: '# New Page\n\nStart writing...',
-      workspaceId,
-      parentId: null,
-      updatedBy: user?.email || 'current-user',
-    };
-    dispatch(addPage({ workspaceId, page: newPage }));
-    // Set the new page as active immediately
-    setCurrentPageId(newPageId);
-    setPageTitle(newPage.title);
-    setPageContent(newPage.content);
+  const handleCreatePage = async () => {
+    try {
+      const result = await dispatch(
+        createPage({
+          workspaceId,
+          title: 'Untitled Page',
+          content: '# New Page\n\nStart writing...',
+          parentId: null,
+        })
+      ).unwrap();
+      
+      const pageId = result._id || result.id;
+      setCurrentPageId(pageId);
+      setPageTitle(result.title);
+      setPageContent(result.content || '');
+    } catch (err) {
+      console.error('Failed to create page:', err);
+    }
   };
 
   // Handle create child page
-  const handleCreateChildPage = (parentId) => {
-    const newPage = {
-      title: 'Untitled Page',
-      content: '# New Page\n\nStart writing...',
-      workspaceId,
-      parentId: parentId,
-      updatedBy: user?.email || 'current-user',
-    };
-    dispatch(addPage({ workspaceId, page: newPage }));
+  const handleCreateChildPage = async (parentId) => {
+    try {
+      const result = await dispatch(
+        createPage({
+          workspaceId,
+          title: 'Untitled Page',
+          content: '# New Page\n\nStart writing...',
+          parentId: parentId,
+        })
+      ).unwrap();
+      
+      // Optionally switch to the new page
+      const pageId = result._id || result.id;
+      setCurrentPageId(pageId);
+      setPageTitle(result.title);
+      setPageContent(result.content || '');
+    } catch (err) {
+      console.error('Failed to create child page:', err);
+    }
   };
 
   // Handle delete page
-  const handleDeletePage = (pageId) => {
-    if (pageId === currentPageId) {
-      // If deleting current page, switch to first available page
-      const remainingPages = pages.filter((p) => p.id !== pageId);
-      if (remainingPages.length > 0) {
-        setCurrentPageId(remainingPages[0].id);
-      } else {
-        setCurrentPageId(null);
-        setPageTitle('');
-        setPageContent('');
-      }
+  const handleDeletePage = async (pageId) => {
+    if (!window.confirm('Are you sure you want to delete this page?')) {
+      return;
     }
-    dispatch(deletePage({ workspaceId, pageId }));
+    
+    try {
+      // If deleting current page, switch to first available page
+      if (pageId === currentPageId) {
+        const remainingPages = pages.filter((p) => (p._id || p.id) !== pageId);
+        if (remainingPages.length > 0) {
+          const firstPage = remainingPages[0];
+          const nextPageId = firstPage._id || firstPage.id;
+          setCurrentPageId(nextPageId);
+        } else {
+          setCurrentPageId(null);
+          setPageTitle('');
+          setPageContent('');
+        }
+      }
+      
+      await dispatch(deletePage({ id: pageId, workspaceId })).unwrap();
+    } catch (err) {
+      console.error('Failed to delete page:', err);
+    }
   };
 
   // Redirect if workspace not found

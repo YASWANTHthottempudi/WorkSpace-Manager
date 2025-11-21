@@ -13,7 +13,7 @@ export default function WorkspaceCard({ workspace, onDelete, onEdit }) {
     e.preventDefault();
     e.stopPropagation();
     if (window.confirm(`Are you sure you want to delete "${workspace.title}"?`)) {
-      onDelete(workspace.id);
+      onDelete(workspace._id || workspace.id);
     }
   };
 
@@ -24,7 +24,7 @@ export default function WorkspaceCard({ workspace, onDelete, onEdit }) {
   };
 
   return (
-    <Link href={`/workspace/${workspace.id}`}>
+    <Link href={`/workspace/${workspace._id || workspace.id}`}>
       <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4 flex-1">

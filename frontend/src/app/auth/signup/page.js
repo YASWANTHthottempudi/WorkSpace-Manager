@@ -72,21 +72,15 @@ export default function SignupPage() {
     
     setIsLoading(true);
     
-    // Mock registration for now (will connect to backend in Week 2)
-    setTimeout(() => {
-      // Simulate API call
-      const mockUser = {
-        email: formData.email,
-        name: formData.name,
-        id: '123'
-      };
-      
-      localStorage.setItem('token', 'mock-jwt-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      
-      setIsLoading(false);
+    const result = await register(formData.name, formData.email, formData.password);
+    
+    if (result.success) {
       router.push('/dashboard');
-    }, 1000);
+    } else {
+      setErrors({ ...errors, general: result.error || 'Registration failed' });
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -108,9 +102,9 @@ export default function SignupPage() {
         </div>
 
         {/* Error Message */}
-        {error && (
+        {(error || errors.general) && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+            {error || errors.general}
           </div>
         )}
 

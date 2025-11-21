@@ -2,9 +2,14 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import connectDB, { getDBStatus } from './config/database.js';
 import authRoutes from './routes/auth.js';
+import workspaceRoutes from './routes/workspace.js';
+import pageRoutes from './routes/page.js';
+import aiRoutes from './routes/ai.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { sanitizeAll } from './middleware/sanitizer.js';
+import { consoleLogger, httpLogger, logger } from './middleware/logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -19,9 +24,19 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true,
 }));
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Logging middleware
+if (process.env.NODE_ENV === 'production') {
+  app.use(httpLogger);
+} else {
+  app.use(consoleLogger);
+}
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization
+app.use(sanitizeAll);
 
 // Enhanced health check route with database status
 app.get('/api/health', (req, res) => {
@@ -52,28 +67,15 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/pages', pageRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: {
-      message: 'Route not found',
-      path: req.path,
-      method: req.method,
-    },
-  });
-});
+app.use(notFoundHandler);
 
-// Error handler (will be improved in Day 6)
-app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(err.status || 500).json({
-    error: {
-      message: err.message || 'Internal server error',
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-    },
-  });
-});
+// Global error handler (must be last)
+app.use(errorHandler);
 
 // Start server
 const startServer = async () => {
@@ -83,10 +85,18 @@ const startServer = async () => {
     
     // Start listening
     app.listen(PORT, () => {
+      const dbStatus = getDBStatus();
+      
+      logger.info('Server started successfully', {
+        port: PORT,
+        environment: process.env.NODE_ENV || 'development',
+        database: dbStatus.status,
+      });
+      
       console.log(`\nServer is running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`Health check: http://localhost:${PORT}/api/health`);
-      console.log(`Database: ${getDBStatus().status}\n`);
+      console.log(`Database: ${dbStatus.status}\n`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

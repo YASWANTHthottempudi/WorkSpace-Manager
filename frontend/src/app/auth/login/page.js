@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { refreshAuth } = useAuth();
+    const { login, error: authError } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -58,32 +58,15 @@ export default function LoginPage() {
         if(!validateForm()) return;
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            const mockUser = {
-                email: formData.email,
-                name: formData.email.split('@')[0],
-                _id: '123'
-            };
-
-            // Set in localStorage
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('token', 'mock-jwt-token');
-                localStorage.setItem('user', JSON.stringify(mockUser));
-            }
-            
-            // Refresh auth context to pick up the new user
-            if (refreshAuth) {
-                refreshAuth();
-            }
-            
-            setIsLoading(false);
-            
-            // Small delay to ensure state updates, then navigate to dashboard
-            setTimeout(() => {
-                router.push('/dashboard');
-            }, 100);
-        }, 500);
+        const result = await login(formData.email, formData.password);
+        
+        if (result.success) {
+            router.push('/dashboard');
+        } else {
+            setErrors({ ...errors, general: result.error || 'Login failed' });
+        }
+        
+        setIsLoading(false);
     };
 
     return (
@@ -103,6 +86,13 @@ export default function LoginPage() {
                 Sign in to your account
               </p>
             </div>
+    
+            {/* Error Message */}
+            {(authError || errors.general) && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {authError || errors.general}
+              </div>
+            )}
     
     {/* Login Form */}
     <form onSubmit={handleSubmit} className="mt-8 space-y-6">

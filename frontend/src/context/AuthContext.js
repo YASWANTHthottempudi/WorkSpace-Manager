@@ -37,12 +37,34 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     
-    // Load user on mount
+    // Load user from storage first
     const loadedUser = loadUserFromStorage();
-    if (loadedUser) {
+    const token = localStorage.getItem('token');
+    
+    if (token && loadedUser) {
       setUser(loadedUser);
+      
+      // Verify token by fetching current user from API
+      const verifyToken = async () => {
+        try {
+          const response = await axios.get('/api/auth/me');
+          const { user: userData } = response.data;
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        } catch (err) {
+          // Token invalid, clear storage
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      verifyToken();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   // Function to refresh auth state from localStorage
@@ -84,6 +106,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
+      setLoading(true);
       const response = await axios.post('/api/auth/login', { email, password });
       const { token, user: userData } = response.data;
       
@@ -92,11 +115,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(userData));
       }
       setUser(userData);
+      setLoading(false);
       
       return { success: true };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Login failed';
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'Login failed';
       setError(errorMessage);
+      setLoading(false);
       return { success: false, error: errorMessage };
     }
   };
@@ -104,6 +129,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     try {
       setError(null);
+      setLoading(true);
       const response = await axios.post('/api/auth/register', { name, email, password });
       const { token, user: userData } = response.data;
       
@@ -112,11 +138,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(userData));
       }
       setUser(userData);
+      setLoading(false);
       
       return { success: true };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Registration failed';
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'Registration failed';
       setError(errorMessage);
+      setLoading(false);
       return { success: false, error: errorMessage };
     }
   };
